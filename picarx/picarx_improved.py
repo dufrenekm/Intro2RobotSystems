@@ -11,6 +11,13 @@ except ImportError:
     from sim_robot_hat import reset_mcu, run_command
 import logging
 import atexit
+from time import sleep
+
+
+logging_format = "%(asctime)s: %(message)s"
+logging.basicConfig(format=logging_format, level=logging.INFO,datefmt="%H:%M:%S")
+
+
 reset_mcu()
 time.sleep(0.2)
 
@@ -52,16 +59,16 @@ class Picarx(object):
                 ):
 
         # reset robot_hat
-        utils.reset_mcu()
+        reset_mcu()
         time.sleep(0.2)
 
         # --------- config_flie ---------
         self.config_flie = fileDB(config, 777, os.getlogin())
 
         # --------- servos init ---------
-        self.cam_pan = Servo(servo_pins[0])
-        self.cam_tilt = Servo(servo_pins[1])   
-        self.dir_servo_pin = Servo(servo_pins[2])
+        self.cam_pan = Servo(PWM(servo_pins[0]))
+        self.cam_tilt = Servo(PWM(servo_pins[1]))   
+        self.dir_servo_pin = Servo(PWM(servo_pins[2]))
         # get calibration values
         self.dir_cali_val = float(self.config_flie.get("picarx_dir_servo", default_value=0))
         self.cam_pan_cali_val = float(self.config_flie.get("picarx_cam_pan_servo", default_value=0))
@@ -97,7 +104,7 @@ class Picarx(object):
         self.cliff_reference = self.config_flie.get("cliff_reference", default_value=str(self.DEFAULT_CLIFF_REF))
         self.cliff_reference = [float(i) for i in self.cliff_reference.strip().strip('[]').split(',')]
         # transfer reference
-        self.grayscale.reference(self.line_reference)
+        # self.grayscale.reference(self.line_reference)
 
         # --------- ultrasonic init ---------
         tring, echo= ultrasonic_pins

@@ -4,6 +4,8 @@
 import logging
 import os
 import time
+import math
+from time import sleep
 def run_command(cmd):
     import subprocess
     p = subprocess.Popen(
@@ -90,38 +92,44 @@ class I2C(_Basic_class):
     def __init__(self, *args, **kargs):     # *args表示位置参数（形式参数），可无，； **kargs表示默认值参数，可无。
         super().__init__()
         self._bus = 1
-        self._smbus = SMBus(self._bus)
+        # self._smbus = SMBus(self._bus)
 
     @_retry_wrapper
     def _i2c_write_byte(self, addr, data):   # i2C 写系列函数
-        self._debug("_i2c_write_byte: [0x{:02X}] [0x{:02X}]".format(addr, data))
-        result = self._smbus.write_byte(addr, data)
-        return result
+        # self._debug("_i2c_write_byte: [0x{:02X}] [0x{:02X}]".format(addr, data))
+        # result = self._smbus.write_byte(addr, data)
+        # return result
+        pass
             
     @_retry_wrapper
     def _i2c_write_byte_data(self, addr, reg, data):
-        self._debug("_i2c_write_byte_data: [0x{:02X}] [0x{:02X}] [0x{:02X}]".format(addr, reg, data))
-        return self._smbus.write_byte_data(addr, reg, data)
+        # self._debug("_i2c_write_byte_data: [0x{:02X}] [0x{:02X}] [0x{:02X}]".format(addr, reg, data))
+        # return self._smbus.write_byte_data(addr, reg, data)
+        pass
     
     @_retry_wrapper
     def _i2c_write_word_data(self, addr, reg, data):
-        self._debug("_i2c_write_word_data: [0x{:02X}] [0x{:02X}] [0x{:04X}]".format(addr, reg, data))
-        return self._smbus.write_word_data(addr, reg, data)
+        # self._debug("_i2c_write_word_data: [0x{:02X}] [0x{:02X}] [0x{:04X}]".format(addr, reg, data))
+        # return self._smbus.write_word_data(addr, reg, data)
+        pass
     
     @_retry_wrapper
     def _i2c_write_i2c_block_data(self, addr, reg, data):
-        self._debug("_i2c_write_i2c_block_data: [0x{:02X}] [0x{:02X}] {}".format(addr, reg, data))
-        return self._smbus.write_i2c_block_data(addr, reg, data)
+        # self._debug("_i2c_write_i2c_block_data: [0x{:02X}] [0x{:02X}] {}".format(addr, reg, data))
+        # return self._smbus.write_i2c_block_data(addr, reg, data)
+        pass
     
     @_retry_wrapper
     def _i2c_read_byte(self, addr):   # i2C 读系列函数
-        self._debug("_i2c_read_byte: [0x{:02X}]".format(addr))
-        return self._smbus.read_byte(addr)
+        # self._debug("_i2c_read_byte: [0x{:02X}]".format(addr))
+        # return self._smbus.read_byte(addr)
+        pass
 
     @_retry_wrapper
     def _i2c_read_i2c_block_data(self, addr, reg, num):
-        self._debug("_i2c_read_i2c_block_data: [0x{:02X}] [0x{:02X}] [{}]".format(addr, reg, num))
-        return self._smbus.read_i2c_block_data(addr, reg, num)
+        # self._debug("_i2c_read_i2c_block_data: [0x{:02X}] [0x{:02X}] [{}]".format(addr, reg, num))
+        # return self._smbus.read_i2c_block_data(addr, reg, num)
+        pass
 
     @_retry_wrapper
     def is_ready(self, addr):
@@ -411,34 +419,37 @@ class Servo(_Basic_class):
         super().__init__()
         self.pwm = pwm
         self.pwm.period(4095)
-        prescaler = int(float(self.pwm.CLOCK) /self.pwm._freq/self.pwm.period())
-        self.pwm.prescaler(prescaler)
+        # prescaler = int(float(self.pwm.CLOCK) /self.pwm._freq/self.pwm.period())
+        # self.pwm.prescaler(prescaler)
         # self.angle(90)
 
     # angle ranges -90 to 90 degrees
     def angle(self, angle):
-        if not (isinstance(angle, int) or isinstance(angle, float)):
-            raise ValueError("Angle value should be int or float value, not %s"%type(angle))
-        if angle < -90:
-            angle = -90
-        if angle > 90:
-            angle = 90
-        High_level_time = self.map(angle, -90, 90, self.MIN_PW, self.MAX_PW)
-        self._debug("High_level_time: %f" % High_level_time)
-        pwr =  High_level_time / 20000
-        self._debug("pulse width rate: %f" % pwr)
-        value = int(pwr*self.pwm.period())
-        self._debug("pulse width value: %d" % value)
-        self.pwm.pulse_width(value)
+        # if not (isinstance(angle, int) or isinstance(angle, float)):
+        #     raise ValueError("Angle value should be int or float value, not %s"%type(angle))
+        # if angle < -90:
+        #     angle = -90
+        # if angle > 90:
+        #     angle = 90
+        # High_level_time = self.map(angle, -90, 90, self.MIN_PW, self.MAX_PW)
+        # self._debug("High_level_time: %f" % High_level_time)
+        # pwr =  High_level_time / 20000
+        # self._debug("pulse width rate: %f" % pwr)
+        # value = int(pwr*self.pwm.period())
+        # self._debug("pulse width value: %d" % value)
+        # self.pwm.pulse_width(value)
+        pass
 
     # pwm_value ranges MIN_PW 500 to MAX_PW 2500 degrees
     def set_pwm(self,pwm_value):
-        if pwm_value > self.MAX_PW:
-            pwm_value =  self.MAX_PW 
-        if pwm_value < self.MIN_PW:
-            pwm_value = self.MIN_PW
+        # if pwm_value > self.MAX_PW:
+        #     pwm_value =  self.MAX_PW 
+        # if pwm_value < self.MIN_PW:
+        #     pwm_value = self.MIN_PW
 
-        self.pwm.pulse_width(pwm_value)
+        # self.pwm.pulse_width(pwm_value)
+        pass
+    
 timer = [
     {
         "arr": 0
@@ -475,7 +486,7 @@ class PWM(I2C):
         self._debug("PWM address: {:02X}".format(self.ADDR))
         self.channel = channel
         self.timer = int(channel/4)
-        self.bus = smbus.SMBus(1)
+        # self.bus = smbus.SMBus(1)
         self._pulse_width = 0
         self._freq = 50
         self.freq(50)
@@ -560,37 +571,39 @@ class ADC(I2C):
 
     def __init__(self, chn):    # 参数，通道数，树莓派扩展板上有8个adc通道分别为"A0, A1, A2, A3, A4, A5, A6, A7"
         super().__init__()
-        if isinstance(chn, str):
-            if chn.startswith("A"):     # 判断穿境来的参数是否为A开头，如果是，取A后面的数字出来
-                chn = int(chn[1:])
-            else:
-                raise ValueError("ADC channel should be between [A0, A7], not {0}".format(chn))
-        if chn < 0 or chn > 7:          # 判断取出来的数字是否在0~7的范围内
-            self._error('Incorrect channel range')
-        chn = 7 - chn
-        self.chn = chn | 0x10           # 给从机地址
-        self.reg = 0x40 + self.chn
-        # self.bus = smbus.SMBus(1)
+        # if isinstance(chn, str):
+        #     if chn.startswith("A"):     # 判断穿境来的参数是否为A开头，如果是，取A后面的数字出来
+        #         chn = int(chn[1:])
+        #     else:
+        #         raise ValueError("ADC channel should be between [A0, A7], not {0}".format(chn))
+        # if chn < 0 or chn > 7:          # 判断取出来的数字是否在0~7的范围内
+        #     self._error('Incorrect channel range')
+        # chn = 7 - chn
+        # self.chn = chn | 0x10           # 给从机地址
+        # self.reg = 0x40 + self.chn
+        # # self.bus = smbus.SMBus(1)
         
     def read(self):                     # adc通道读取数---写一次数据，读取两次数据 （读取的数据范围是0~4095）
-        self._debug("Write 0x%02X to 0x%02X"%(self.chn, self.ADDR))
-        # self.bus.write_byte(self.ADDR, self.chn)      # 写入数据
-        self.send([self.chn, 0, 0], self.ADDR)
+        # self._debug("Write 0x%02X to 0x%02X"%(self.chn, self.ADDR))
+        # # self.bus.write_byte(self.ADDR, self.chn)      # 写入数据
+        # self.send([self.chn, 0, 0], self.ADDR)
 
-        self._debug("Read from 0x%02X"%(self.ADDR))
-        # value_h = self.bus.read_byte(self.ADDR)
-        value_h = self.recv(1, self.ADDR)[0]            # 读取数据
+        # self._debug("Read from 0x%02X"%(self.ADDR))
+        # # value_h = self.bus.read_byte(self.ADDR)
+        # value_h = self.recv(1, self.ADDR)[0]            # 读取数据
 
-        self._debug("Read from 0x%02X"%(self.ADDR))
-        # value_l = self.bus.read_byte(self.ADDR)
-        value_l = self.recv(1, self.ADDR)[0]            # 读取数据（读两次）
+        # self._debug("Read from 0x%02X"%(self.ADDR))
+        # # value_l = self.bus.read_byte(self.ADDR)
+        # value_l = self.recv(1, self.ADDR)[0]            # 读取数据（读两次）
 
-        value = (value_h << 8) + value_l
-        self._debug("Read value: %s"%value)
-        return value
+        # value = (value_h << 8) + value_l
+        # self._debug("Read value: %s"%value)
+        # return value
+        pass
 
     def read_voltage(self):                             # 将读取的数据转化为电压值（0~3.3V）
-        return self.read*3.3/4095
+        # return self.read*3.3/4095
+        pass
 
 
 class Pin(_Basic_class):
