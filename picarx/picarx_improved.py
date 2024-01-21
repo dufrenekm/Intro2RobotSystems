@@ -12,10 +12,13 @@ except ImportError:
 import logging
 import atexit
 from time import sleep
+from logdecorator import log_on_start, log_on_end, log_on_error
+import atexit
 
 
 logging_format = "%(asctime)s: %(message)s"
 logging.basicConfig(format=logging_format, level=logging.INFO,datefmt="%H:%M:%S")
+logging.getLogger().setLevel(logging.DEBUG)
 
 
 reset_mcu()
@@ -29,6 +32,7 @@ def constrain(x, min_val, max_val):
     return max(min_val, min(max_val, x))
 
 class Picarx(object):
+    
     CONFIG = '/opt/picar-x/picar-x.conf'
 
     DEFAULT_LINE_REF = [1000, 1000, 1000]
@@ -58,6 +62,8 @@ class Picarx(object):
                 config:str=CONFIG,
                 ):
 
+        atexit.register(self.stop)
+        
         # reset robot_hat
         reset_mcu()
         time.sleep(0.2)
@@ -125,8 +131,9 @@ class Picarx(object):
         elif speed < 0:
             direction = -1 * self.cali_dir_value[motor]
         speed = abs(speed)
-        if speed != 0:
-            speed = int(speed /2 ) + 50
+        # I belive this is the speed scaling
+        # if speed != 0:
+        #     speed = int(speed /2 ) + 50
         speed = speed - self.cali_speed_value[motor]
         if direction < 0:
             self.motor_direction_pins[motor].high()
@@ -223,12 +230,17 @@ class Picarx(object):
                 self.set_motor_speed(2, -1*speed * power_scale)
         else:
             self.set_motor_speed(1, speed)
-            self.set_motor_speed(2, -1*speed)                  
-
+            self.set_motor_speed(2, -1*speed)            
+                  
+    @log_on_start(logging.DEBUG, "Stopping car.")
+    @log_on_error(logging.DEBUG, "Failed to stop car!!")
+    @log_on_end(logging.DEBUG, "Stopped car succesfully.")
+    
     def stop(self):
         '''
         Execute twice to make sure it stops
         '''
+        
         for _ in range(2):
             self.motor_speed_pins[0].pulse_width_percent(0)
             self.motor_speed_pins[1].pulse_width_percent(0)
