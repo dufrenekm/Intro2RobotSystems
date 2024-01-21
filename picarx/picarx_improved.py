@@ -279,8 +279,13 @@ class Picarx(object):
         else:
             raise ValueError("grayscale reference must be a 1*3 list")
 
+
+def check_steering_calibration(picar):
+    print(picar.dir_cali_val)
+
 if __name__ == "__main__":
     px = Picarx()
+    check_steering_calibration(px)
     px.forward(50)
     time.sleep(1)
     px.stop()
