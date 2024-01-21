@@ -62,7 +62,7 @@ class Picarx(object):
                 config:str=CONFIG,
                 ):
 
-        atexit.register(self.stop)
+        
         
         # reset robot_hat
         reset_mcu()
@@ -72,9 +72,9 @@ class Picarx(object):
         self.config_flie = fileDB(config, 777, os.getlogin())
 
         # --------- servos init ---------
-        self.cam_pan = Servo(PWM(servo_pins[0]))
-        self.cam_tilt = Servo(PWM(servo_pins[1]))   
-        self.dir_servo_pin = Servo(PWM(servo_pins[2]))
+        self.cam_pan = Servo(servo_pins[0])
+        self.cam_tilt = Servo(servo_pins[1])   
+        self.dir_servo_pin = Servo(servo_pins[2])
         # get calibration values
         self.dir_cali_val = float(self.config_flie.get("picarx_dir_servo", default_value=0))
         self.cam_pan_cali_val = float(self.config_flie.get("picarx_cam_pan_servo", default_value=0))
@@ -115,6 +115,8 @@ class Picarx(object):
         # --------- ultrasonic init ---------
         tring, echo= ultrasonic_pins
         self.ultrasonic = Ultrasonic(Pin(tring), Pin(echo))
+        
+        atexit.register(self.stop)
         
     def set_motor_speed(self, motor, speed):
         ''' set motor speed
