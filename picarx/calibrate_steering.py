@@ -9,6 +9,10 @@ def check_steering_calibration(picar):
         picar.forward(50)
         time.sleep(1)
         picar.stop()
+        time.sleep(.2)
+        picar.backward(50)
+        time.sleep(1)
+        picar.stop()
         user_in = input("Enter a new value (or e to exit). Old val: %d   : "%float(picar.config_flie.get("picarx_dir_servo", default_value=0)))
         if user_in == 'e':
             break

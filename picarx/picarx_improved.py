@@ -201,43 +201,75 @@ class Picarx(object):
         self.set_motor_speed(2, speed)
 
     def backward(self, speed):
+        # current_angle = self.dir_current_angle
+        # if current_angle != 0:
+        #     abs_current_angle = abs(current_angle)
+        #     if abs_current_angle > self.DIR_MAX:
+        #         abs_current_angle = self.DIR_MAX
+        #     power_scale = (100 - abs_current_angle) / 100.0 
+        #     if (current_angle / abs_current_angle) > 0:
+        #         self.set_motor_speed(1, -1*speed)
+        #         self.set_motor_speed(2, speed * power_scale)
+        #     else:
+        #         self.set_motor_speed(1, -1*speed * power_scale)
+        #         self.set_motor_speed(2, speed )
+        # else:
+        #     self.set_motor_speed(1, -1*speed)
+        #     self.set_motor_speed(2, speed)  
+            
         current_angle = self.dir_current_angle
-        if current_angle != 0:
-            abs_current_angle = abs(current_angle)
-            if abs_current_angle > self.DIR_MAX:
-                abs_current_angle = self.DIR_MAX
-            power_scale = (100 - abs_current_angle) / 100.0 
-            if (current_angle / abs_current_angle) > 0:
-                self.set_motor_speed(1, -1*speed)
-                self.set_motor_speed(2, speed * power_scale)
-            else:
-                self.set_motor_speed(1, -1*speed * power_scale)
-                self.set_motor_speed(2, speed )
-        else:
-            self.set_motor_speed(1, -1*speed)
-            self.set_motor_speed(2, speed)  
+        left_speed, right_speed = self.ack_calcs(speed, current_angle)        
+        self.set_motor_speed(2, left_speed)
+        self.set_motor_speed(1, -right_speed) 
 
     def forward(self, speed):
         current_angle = self.dir_current_angle
-        if current_angle != 0:
-            abs_current_angle = abs(current_angle)
-            if abs_current_angle > self.DIR_MAX:
-                abs_current_angle = self.DIR_MAX
-            power_scale = (100 - abs_current_angle) / 100.0
-            if (current_angle / abs_current_angle) > 0:
-                self.set_motor_speed(1, 1*speed * power_scale)
-                self.set_motor_speed(2, -speed) 
-            else:
-                self.set_motor_speed(1, speed)
-                self.set_motor_speed(2, -1*speed * power_scale)
-        else:
-            self.set_motor_speed(1, speed)
-            self.set_motor_speed(2, -1*speed)            
-                  
+        left_speed, right_speed = self.ack_calcs(speed, current_angle)
+        # if current_angle != 0:
+        #     abs_current_angle = abs(current_angle)
+        #     if abs_current_angle > self.DIR_MAX:
+        #         abs_current_angle = self.DIR_MAX
+        #     power_scale = (100 - abs_current_angle) / 100.0
+        #     if (current_angle / abs_current_angle) > 0:
+        #         self.set_motor_speed(1, 1*speed * power_scale)
+        #         self.set_motor_speed(2, -speed) 
+        #     else:
+        #         self.set_motor_speed(1, speed)
+        #         self.set_motor_speed(2, -1*speed * power_scale)
+        # else:
+        
+        self.set_motor_speed(2, -left_speed)
+        self.set_motor_speed(1, right_speed)            
+     
+     
+    def ack_calcs(self, speed, angle):
+        # Referenced equations and info here: https://physics.stackexchange.com/questions/620458/how-do-we-implement-the-speed-differential-for-the-ackermann-steering
+        # We will just assume angle is same for both wheels
+        if angle == 0:
+            return speed, speed
+        # All dimensions in meters
+        wheelbase_length = .095
+        track = .115
+        angle_rad = abs(angle) / 180.0 * math.pi
+        r_icr_center = wheelbase_length*math.tan(math.pi/2.0-angle_rad)
+        r_icr = [r_icr_center+track/2.0, r_icr_center-track/2.0]
+
+        # We know circumfrence is a linear function of radius
+        # So we can just do a linear relationship between wheel speeds
+        if angle > 0:
+            left_speed = speed
+            right_speed = speed/(r_icr[0]/r_icr[1])
+        else: 
+            left_speed = speed/(r_icr[0]/r_icr[1])
+            right_speed = speed
+        
+        logging.debug(f"Left speed: {left_speed}, right speed: {right_speed}")
+        return left_speed, right_speed
+       
+                 
     @log_on_start(logging.DEBUG, "Stopping car.")
     @log_on_error(logging.DEBUG, "Failed to stop car!!")
     @log_on_end(logging.DEBUG, "Stopped car succesfully.")
-    
     def stop(self):
         '''
         Execute twice to make sure it stops
@@ -281,10 +313,87 @@ class Picarx(object):
         else:
             raise ValueError("grayscale reference must be a 1*3 list")
    
-    
+    ### Manuevering functions
+    def forward_back(self):
+        """ Just moves forward and back a set amount once """
+        self.forward(50)
+        time.sleep(1)
+        self.stop()
+        time.sleep(.1)
+        self.backward(50)
+        time.sleep(1)
+        self.stop()
+        
+    def parallel_park_left(self):
+        self.set_dir_servo_angle(-30)
+        time.sleep(.5)
+        self.backward(40)
+        time.sleep(.8)
+        self.stop()
+        time.sleep(.1)
+        self.set_dir_servo_angle(30)
+        self.backward(40)
+        time.sleep(.7)
+        self.stop()
+        self.set_dir_servo_angle(0)
+        
+    def parallel_park_right(self):
+        self.set_dir_servo_angle(30)
+        time.sleep(.5)
+        self.backward(40)
+        time.sleep(.8)
+        self.stop()
+        time.sleep(.1)
+        self.set_dir_servo_angle(-30)
+        self.backward(40)
+        time.sleep(.85)
+        self.stop()
+        self.set_dir_servo_angle(0)
+        
+    def k_turn_right(self):
+        self.set_dir_servo_angle(30)
+        time.sleep(.25)
+        self.forward(40)
+        time.sleep(1.2)
+        self.stop()
+        time.sleep(.25)
+        self.set_dir_servo_angle(-30)
+        time.sleep(.25)
+        self.backward(40)
+        time.sleep(1.2)
+        self.stop()
+        time.sleep(.25)
+        self.set_dir_servo_angle(30)
+        time.sleep(.25)
+        self.forward(40)
+        time.sleep(1.2)
+        self.stop()
+        self.set_dir_servo_angle(0)
+        
+    def k_turn_left(self):
+        self.set_dir_servo_angle(-30)
+        time.sleep(.25)
+        self.forward(40)
+        time.sleep(1.3)
+        self.stop()
+        time.sleep(.25)
+        self.set_dir_servo_angle(30)
+        time.sleep(.25)
+        self.backward(40)
+        time.sleep(1.3)
+        self.stop()
+        time.sleep(.25)
+        self.set_dir_servo_angle(-30)
+        time.sleep(.25)
+        self.forward(40)
+        time.sleep(1.3)
+        self.stop()
+        self.set_dir_servo_angle(0)
+        
 
 if __name__ == "__main__":
     px = Picarx()
+    px.set_dir_servo_angle(20)
     px.forward(50)
     time.sleep(1)
     px.stop()
