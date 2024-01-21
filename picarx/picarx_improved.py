@@ -283,7 +283,13 @@ class Picarx(object):
 
 
 def check_steering_calibration(picar):
-    print(picar.dir_cali_val)
+    # Was -10
+    print("Old calibration value: ", picar.dir_cali_val)
+    
+        # picar.dir_cali_val = value
+    picar.config_flie.set("picarx_dir_servo", "%s"%-30)
+    picar.dir_servo_pin.angle(-30)
+    
 
 if __name__ == "__main__":
     px = Picarx()
