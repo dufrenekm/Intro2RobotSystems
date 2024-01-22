@@ -143,6 +143,8 @@ class Picarx(object):
         else:
             self.motor_direction_pins[motor].low()
             self.motor_speed_pins[motor].pulse_width_percent(speed)
+        
+        logging.debug(f"Motor: {motor}, speed: {speed}")
 
     def motor_speed_calibration(self, value):
         self.cali_speed_value = value
@@ -393,7 +395,7 @@ class Picarx(object):
 
 if __name__ == "__main__":
     px = Picarx()
-    px.set_dir_servo_angle(20)
-    px.forward(50)
+    # px.set_dir_servo_angle(20)
+    px.parallel_park_left()
     time.sleep(1)
     px.stop()
