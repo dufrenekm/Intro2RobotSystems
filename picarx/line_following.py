@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from picarx_improved import Picarx, ADC, logging, constrain
 from time import sleep
+import numpy as np
 class Grayscale_Sensor(object):
     LEFT = 0
     """Left Channel"""
@@ -80,39 +81,100 @@ class Interpreter():
     def __init__(self, light_sensitivity = 25, dark_sensitivity = 20, follow_dark_line = True):
         self.dark = dark_sensitivity
         self.light = light_sensitivity
+        self.polarity = follow_dark_line
+        self.counter = 0
         
     def return_pos(self, greyscale_value = [0, 0, 0]):
         
         # First check if we have a least one value below the thresehold and one value above, or we failed
         min_val = min(greyscale_value)
         max_val = max(greyscale_value)
-        if (not min_val < self.dark) or (not max_val > self.light):
-            logging.error(f"Min/max thresehold not hit - following failed.")
-            exit()
+        if not (min_val < self.dark) or not (max_val > self.light):
+            self.counter += 1
+            if self.counter > 10: 
+
+                logging.error(f"Min/max thresehold not hit - following failed.")
+                exit()
+            return 0
+        
+        self.counter = 0
             
         # Check if the min/max is in the middle
-        if follow_dark_line and greyscale_value.index(min(greyscale_value)) == 1:
+        if self.polarity and greyscale_value.index(min(greyscale_value)) == 1:
             # Dark line, and the darkest is in the middle
             
             # Line towards the center, but we will adjust towards side based on which one is greater
             edges = [greyscale_value[0], greyscale_value[2]]
             ratio = min(edges)/max(edges)
-            return constrain(1 - ratio, -.5, .5)
+            if greyscale_value[0] > greyscale_value[2]:
+                sign = 1
+            else: 
+                sign = -1
+            return sign * constrain(1 - ratio, -.5, .5)
+        elif not self.polarity and greyscale_value.index(max(greyscale_value)) == 1:
+            # light line, and the brightest is in the middle
             
+            # Line towards the center, but we will adjust towards side based on which one is greater
+            edges = [greyscale_value[0], greyscale_value[2]]
+            ratio = min(edges)/max(edges)
+            if greyscale_value[0] > greyscale_value[2]:
+                sign = -1
+            else: 
+                sign = 1
+            return sign * constrain(1 - ratio, -.5, .5)
+        elif self.polarity and greyscale_value.index(min(greyscale_value)) == 2:
+            # Dark line, edge to right
             
+            print('This case')
+            return greyscale_value[1]/greyscale_value[2]
         
+        elif self.polarity and greyscale_value.index(min(greyscale_value)) == 0:
+            print('That case')
+            return -greyscale_value[1]/greyscale_value[0]
+        elif not self.polarity and greyscale_value.index(max(greyscale_value)) == 2:
+            # Dark line, edge to right
+            
+            print('This case')
+            return greyscale_value[1]/greyscale_value[2]
+        
+        elif not self.polarity and greyscale_value.index(max(greyscale_value)) == 0:
+            print('That case')
+            return -greyscale_value[1]/greyscale_value[0]
+            
+class Controller():
+    def __init__(self, picar: Picarx, scaling_factor = 15.0):
+        self.scale_factor = scaling_factor
+        
+    def update_angle(self, line_pos = 0.0):
+        scaled_val = self.scale_factor * line_pos
+        picar.set_dir_servo_angle(scaled_val)
+        return(scaled_val)
+        
+    
         
 if __name__ == "__main__":
     # Set up picar class
     picar = Picarx()
     # Set up greyscale class for reading 
     grey_sensor = Grayscale_Sensor(ADC(Grayscale_Sensor.LEFT), ADC(Grayscale_Sensor.MIDDLE), ADC(Grayscale_Sensor.RIGHT))
-    inter = Interpreter(25, 15, True)
-    
-    
+    inter = Interpreter(25, 20, True)
+    control = Controller(picar, 20)
+    avg_read = 0
+    reading = np.zeros((3,3))
+    picar.forward(30)
     while True:
-        grey = grey_sensor.read()
+        # Get three readings
+        for i in range(3):
+            ahh = grey_sensor.read()
+            print(ahh)
+            reading[i, :] = ahh
+            
+        avg_reading = list(np.mean(reading, axis=0))
+        # print(avg_reading)
+        # print(reading)
+        # break
+        # print(sum(reading))
         
-        print(grey)
-        print(inter.return_pos(grey))
-        sleep(.5)
+        inter_val = inter.return_pos(avg_reading)
+        print(control.update_angle(inter_val))
+        sleep(.05)
