@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from picarx_improved import Picarx, ADC
+from picarx_improved import Picarx, ADC, logging, constrain
+from time import sleep
 class Grayscale_Sensor(object):
     LEFT = 0
     """Left Channel"""
@@ -76,16 +77,42 @@ class Grayscale_Sensor(object):
 class Interpreter():
     """Interprets the greyscale sensor data and returns where the line is: 
          robot relative to the line as a value on the interval [−1,1], with positive values being to the left of the robot."""
-    def __init__(self):
-        pass
+    def __init__(self, light_sensitivity = 25, dark_sensitivity = 20, follow_dark_line = True):
+        self.dark = dark_sensitivity
+        self.light = light_sensitivity
+        
     def return_pos(self, greyscale_value = [0, 0, 0]):
-        pass
+        
+        # First check if we have a least one value below the thresehold and one value above, or we failed
+        min_val = min(greyscale_value)
+        max_val = max(greyscale_value)
+        if (not min_val < self.dark) or (not max_val > self.light):
+            logging.error(f"Min/max thresehold not hit - following failed.")
+            exit()
+            
+        # Check if the min/max is in the middle
+        if follow_dark_line and greyscale_value.index(min(greyscale_value)) == 1:
+            # Dark line, and the darkest is in the middle
+            
+            # Line towards the center, but we will adjust towards side based on which one is greater
+            edges = [greyscale_value[0], greyscale_value[2]]
+            ratio = min(edges)/max(edges)
+            return constrain(1 - ratio, -.5, .5)
+            
+            
+        
         
 if __name__ == "__main__":
     # Set up picar class
     picar = Picarx()
     # Set up greyscale class for reading 
     grey_sensor = Grayscale_Sensor(ADC(Grayscale_Sensor.LEFT), ADC(Grayscale_Sensor.MIDDLE), ADC(Grayscale_Sensor.RIGHT))
+    inter = Interpreter(25, 15, True)
     
     
-    print(grey_sensor.read())
+    while True:
+        grey = grey_sensor.read()
+        
+        print(grey)
+        print(inter.return_pos(grey))
+        sleep(.5)

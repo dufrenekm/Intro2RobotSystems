@@ -10,7 +10,6 @@ except ImportError:
     from sim_robot_hat import Grayscale_Module, Ultrasonic
     from sim_robot_hat import reset_mcu, run_command
 import logging
-import atexit
 from time import sleep
 from logdecorator import log_on_start, log_on_end, log_on_error
 import atexit
