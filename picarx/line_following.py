@@ -140,10 +140,11 @@ class Interpreter():
 class Controller():
     def __init__(self, picar: Picarx, scaling_factor = 15.0):
         self.scale_factor = scaling_factor
+        self.picar = picar
         
     def update_angle(self, line_pos = 0.0):
         scaled_val = self.scale_factor * line_pos
-        picar.set_dir_servo_angle(scaled_val)
+        self.picar.set_dir_servo_angle(scaled_val)
         return(scaled_val)
         
     
