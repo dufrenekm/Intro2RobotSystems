@@ -30,7 +30,7 @@ def constrain(x, min_val, max_val):
     Constrains value to be within a range.
     '''
     return max(min_val, min(max_val, x))
-
+      
 class Picarx(object):
     
     CONFIG = '/opt/picar-x/picar-x.conf'

@@ -1,50 +1,91 @@
 #!/usr/bin/env python3
-from .i2c import I2C
+from picarx_improved import Picarx, ADC
+class Grayscale_Sensor(object):
+    LEFT = 0
+    """Left Channel"""
+    MIDDLE = 1
+    """Middle Channel"""
+    RIGHT = 2
+    """Right Channel"""
+    REFERENCE_DEFAULT = [1000]*3
 
-class ADC(I2C):
-    ADDR=0x14                   # 扩展板的地址为0x14
+    def __init__(self, pin0: ADC, pin1: ADC, pin2: ADC, reference: int = None):
+        """
+        Initialize Grayscale Module
 
-    def __init__(self, chn):    # 参数，通道数，树莓派扩展板上有8个adc通道分别为"A0, A1, A2, A3, A4, A5, A6, A7"
-        super().__init__()
-        if isinstance(chn, str):
-            if chn.startswith("A"):     # 判断穿境来的参数是否为A开头，如果是，取A后面的数字出来
-                chn = int(chn[1:])
+        :param pin0: ADC object or int for channel 0
+        :type pin0: robot_hat.ADC/int
+        :param pin1: ADC object or int for channel 1
+        :type pin1: robot_hat.ADC/int
+        :param pin2: ADC object or int for channel 2
+        :type pin2: robot_hat.ADC/int
+        :param reference: reference voltage
+        :type reference: 1*3 list, [int, int, int]
+        """
+        self.pins = (pin0, pin1, pin2)
+        for i, pin in enumerate(self.pins):
+            if not isinstance(pin, ADC):
+                raise TypeError(f"pin{i} must be robot_hat.ADC")
+        self._reference = self.REFERENCE_DEFAULT
+
+    def reference(self, ref: list = None) -> list:
+        """
+        Get Set reference value
+
+        :param ref: reference value, None to get reference value
+        :type ref: list
+        :return: reference value
+        :rtype: list
+        """
+        if ref is not None:
+            if isinstance(ref, list) and len(ref) == 3:
+                self._reference = ref
             else:
-                raise ValueError("ADC channel should be between [A0, A7], not {0}".format(chn))
-        if chn < 0 or chn > 7:          # 判断取出来的数字是否在0~7的范围内
-            self._error('Incorrect channel range')
-        chn = 7 - chn
-        self.chn = chn | 0x10           # 给从机地址
-        self.reg = 0x40 + self.chn
-        # self.bus = smbus.SMBus(1)
+                raise TypeError("ref parameter must be 1*3 list.")
+        return self._reference
+
+    def read_status(self, datas: list = None) -> list:
+        """
+        Read line status
+
+        :param datas: list of grayscale datas, if None, read from sensor
+        :type datas: list
+        :return: list of line status, 0 for white, 1 for black
+        :rtype: list
+        """
+        if self._reference == None:
+            raise ValueError("Reference value is not set")
+        if datas == None:
+            datas = self.read()
+        return [0 if data > self._reference[i] else 1 for i, data in enumerate(datas)]
+
+    def read(self, channel: int = None) -> list:
+        """
+        read a channel or all datas
+
+        :param channel: channel to read, leave empty to read all. 0, 1, 2 or Grayscale_Module.LEFT, Grayscale_Module.CENTER, Grayscale_Module.RIGHT 
+        :type channel: int/None
+        :return: list of grayscale data
+        :rtype: list
+        """
+        if channel == None:
+            return [self.pins[i].read() for i in range(3)]
+        else:
+            return self.pins[channel].read()
+
+class Interpreter():
+    """Interprets the greyscale sensor data and returns where the line is: 
+         robot relative to the line as a value on the interval [−1,1], with positive values being to the left of the robot."""
+    def __init__(self):
+        pass
+    def return_pos(self, greyscale_value = [0, 0, 0]):
+        pass
         
-    def read(self):                     # adc通道读取数---写一次数据，读取两次数据 （读取的数据范围是0~4095）
-        self._debug("Write 0x%02X to 0x%02X"%(self.chn, self.ADDR))
-        # self.bus.write_byte(self.ADDR, self.chn)      # 写入数据
-        self.send([self.chn, 0, 0], self.ADDR)
-
-        self._debug("Read from 0x%02X"%(self.ADDR))
-        # value_h = self.bus.read_byte(self.ADDR)
-        value_h = self.recv(1, self.ADDR)[0]            # 读取数据
-
-        self._debug("Read from 0x%02X"%(self.ADDR))
-        # value_l = self.bus.read_byte(self.ADDR)
-        value_l = self.recv(1, self.ADDR)[0]            # 读取数据（读两次）
-
-        value = (value_h << 8) + value_l
-        self._debug("Read value: %s"%value)
-        return value
-
-    def read_voltage(self):                             # 将读取的数据转化为电压值（0~3.3V）
-        return self.read*3.3/4095
-        
-
-def test():
-    import time
-    adc = ADC(0)
-    while True:
-        print(adc.read())
-        time.sleep(1)
-
-if __name__ == '__main__':
-    test()
+if __name__ == "__main__":
+    # Set up picar class
+    picar = Picarx()
+    # Set up greyscale class for reading 
+    grey_sensor = Grayscale_Sensor(ADC(Grayscale_Sensor.LEFT), ADC(Grayscale_Sensor.MIDDLE), ADC(Grayscale_Sensor.RIGHT))
+    
+    
+    print(grey_sensor.read())
