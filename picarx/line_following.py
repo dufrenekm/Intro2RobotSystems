@@ -125,20 +125,16 @@ class Interpreter():
         elif self.polarity and greyscale_value.index(min(greyscale_value)) == 2:
             # Dark line, edge to right
             
-            print('This case')
             return greyscale_value[1]/greyscale_value[2]
         
         elif self.polarity and greyscale_value.index(min(greyscale_value)) == 0:
-            print('That case')
             return -greyscale_value[1]/greyscale_value[0]
         elif not self.polarity and greyscale_value.index(max(greyscale_value)) == 2:
             # Dark line, edge to right
             
-            print('This case')
             return greyscale_value[1]/greyscale_value[2]
         
         elif not self.polarity and greyscale_value.index(max(greyscale_value)) == 0:
-            print('That case')
             return -greyscale_value[1]/greyscale_value[0]
             
 class Controller():
@@ -166,7 +162,6 @@ if __name__ == "__main__":
         # Get three readings
         for i in range(3):
             ahh = grey_sensor.read()
-            print(ahh)
             reading[i, :] = ahh
             
         avg_reading = list(np.mean(reading, axis=0))
@@ -176,5 +171,6 @@ if __name__ == "__main__":
         # print(sum(reading))
         
         inter_val = inter.return_pos(avg_reading)
-        print(control.update_angle(inter_val))
+        logging.debug(f"Line position: {inter_val}")
+        control.update_angle(inter_val)
         sleep(.05)
