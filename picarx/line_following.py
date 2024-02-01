@@ -163,18 +163,14 @@ if __name__ == "__main__":
     while True:
         # Get three readings
         for i in range(5):
-            ahh = grey_sensor.read()
-            reading[i, :] = ahh
+            sensor_read = grey_sensor.read()
+            reading[i, :] = sensor_read
             
         avg_reading = list(np.mean(reading, axis=0))
         
-        print(avg_reading)
-        # print(reading)
-        # break
-        # print(sum(reading))
-        
+        logging.debug(f"Avg reading: {avg_reading}")
         inter_val = inter.return_pos(avg_reading)
-        # logging.debug(f"Line position: {inter_val}")
+        logging.debug(f"Line position: {inter_val}")
         
         control.update_angle((inter_val*1.5+prev_angle*.5)/2)
         prev_angle = inter_val

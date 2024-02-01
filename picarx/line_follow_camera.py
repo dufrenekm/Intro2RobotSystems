@@ -51,7 +51,6 @@ class Process_Image():
         
         blurred = cv.GaussianBlur(img, (9, 9), 0)
         gray = cv.cvtColor(blurred, cv.COLOR_BGR2GRAY)
-        # adjusted = cv.convertScaleAbs(gray, alpha=2.0, beta=1)
         val, mask = cv.threshold(gray, 0, 255, cv.THRESH_BINARY+cv.THRESH_OTSU)
                                 
                                     
@@ -72,18 +71,11 @@ class Process_Image():
         # cv.waitKey(1)
         
         dst = cv.Canny(grey_image_shrunk, 50, 200, None, 3)
-        # print(dst.shape)
-        # print(dst)
-        # (768, 824)
-        
+    
         # Get array slice towards bottom
         slice_dst = dst[500,:]
-        # cv.imshow("th1", slice_dst)
-        
-        # cv.waitKey(0)
-        
+        # Get edges 
         new_edges = np.where(slice_dst == 255)
-        print("Edges ", new_edges)
         
         
         # plt.subplot(121),plt.imshow(th1,cmap = 'gray')
@@ -131,13 +123,10 @@ class Process_Image():
         # center_point = (int(np.mean(x_values)), int(568-lookahead_pixels))
         if len(new_edges[0]) >= 2:
             center_point = (int((new_edges[0][0] +new_edges[0][1])/2.0), 500)
-            # print("X vals: ", x_values)
-            print("Average: ", center_point)
             cv.circle(img,center_point, 10, (0,255,255), -1)
             
             # Convert image width to scale from -1 to 1
             scaled_center = center_point[0]/(grey_image_shrunk.shape[1]/2) - 1# width of image
-            print("Scaled center: ",scaled_center)
             # Where it passes the bottom at 823...
             
             # bottom_point = (568-rho/b)*-b/a
@@ -156,31 +145,6 @@ class Process_Image():
         
         
         return scaled_center
-        
-        
-        
-        # # print(contours)
-        # # Sort contours largest to smallest by area
-        # sort_cont = sorted(cnts, key=cv.contourArea, reverse=False)
-        # thres_new = cv.drawContours(img, sort_cont, 1, (0,255,0), 3)
-        # c = sort_cont[1]
-        # #print(f"C1: {c}")
-        # epsilon = 0.1*cv.arcLength(c,True)
-        # approx_cont_1 = cv.approxPolyDP(c,epsilon,True)
-        # cont_1 = np.array([approx_cont_1[0][0], approx_cont_1[1][0]])
-        # print(cont_1)
-        
-        # # edges = cv.Canny(th1,100,200)
-        # # plt.subplot(121),plt.imshow(th1,cmap = 'gray')
-        # # plt.title('Original Image'), plt.xticks([]), plt.yticks([])
-        # # plt.subplot(122),plt.imshow(edges,cmap = 'gray')
-        # # plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
-        # # plt.show()
-        # cv.namedWindow("Threshold", cv.WINDOW_NORMAL) 
-        # cv.resizeWindow("Threshold", 100, 300)
-        # cv.imshow("Threshold", thres_new)
-        
-        # cv.waitKey(0)
     
     def get_line_pos(self):
         self.take_pic()
@@ -196,12 +160,6 @@ if __name__ == "__main__":
     # Point the camera servo down
     picar.set_cam_pan_angle(0)
     picar.set_cam_tilt_angle(-30)
-    # camera = PiCamera()
-    # camera.resolution = (1024, 768)
-    # camera.start_preview()
-    # # Camera warm-up time
-    # sleep(2)
-    # camera.capture('pic.jpg')
     img = Process_Image()
     
     control = Controller(picar, 35)
