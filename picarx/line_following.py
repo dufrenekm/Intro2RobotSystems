@@ -91,7 +91,7 @@ class Interpreter():
         max_val = max(greyscale_value)
         if not (min_val < self.dark) or not (max_val > self.light):
             self.counter += 1
-            if self.counter > 10: 
+            if self.counter > 20: 
 
                 logging.error(f"Min/max thresehold not hit - following failed.")
                 exit()
@@ -154,24 +154,28 @@ if __name__ == "__main__":
     picar = Picarx()
     # Set up greyscale class for reading 
     grey_sensor = Grayscale_Sensor(ADC(Grayscale_Sensor.LEFT), ADC(Grayscale_Sensor.MIDDLE), ADC(Grayscale_Sensor.RIGHT))
-    inter = Interpreter(25, 20, True)
-    control = Controller(picar, 20)
+    inter = Interpreter(40, 32, False) # was 25, 20
+    control = Controller(picar, 40)
     avg_read = 0
-    reading = np.zeros((3,3))
-    picar.forward(30)
+    reading = np.zeros((5,3))
+    picar.forward(24)
+    prev_angle = 0
     while True:
         # Get three readings
-        for i in range(3):
+        for i in range(5):
             ahh = grey_sensor.read()
             reading[i, :] = ahh
             
         avg_reading = list(np.mean(reading, axis=0))
-        # print(avg_reading)
+        
+        print(avg_reading)
         # print(reading)
         # break
         # print(sum(reading))
         
         inter_val = inter.return_pos(avg_reading)
-        logging.debug(f"Line position: {inter_val}")
-        control.update_angle(inter_val)
+        # logging.debug(f"Line position: {inter_val}")
+        
+        control.update_angle((inter_val*1.5+prev_angle*.5)/2)
+        prev_angle = inter_val
         sleep(.05)
