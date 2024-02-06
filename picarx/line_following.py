@@ -2,6 +2,8 @@
 from picarx_improved import Picarx, ADC, logging, constrain
 from time import sleep
 import numpy as np
+from bus import Bus
+import concurrent.futures
 class Grayscale_Sensor(object):
     LEFT = 0
     """Left Channel"""
@@ -74,6 +76,14 @@ class Grayscale_Sensor(object):
             return [self.pins[i].read() for i in range(3)]
         else:
             return self.pins[channel].read()
+        
+    def producer(self, bus, delay = .01):
+        """ Grab sensor data and publish it at the rate we want """
+        while True:
+            bus.write(self.read())
+            sleep(delay)
+        
+    
 
 class Interpreter():
     """Interprets the greyscale sensor data and returns where the line is: 
@@ -83,6 +93,7 @@ class Interpreter():
         self.light = light_sensitivity
         self.polarity = follow_dark_line
         self.counter = 0
+        
         
     def return_pos(self, greyscale_value = [0, 0, 0]):
         
@@ -136,6 +147,15 @@ class Interpreter():
         
         elif not self.polarity and greyscale_value.index(max(greyscale_value)) == 0:
             return -greyscale_value[1]/greyscale_value[0]
+        
+        
+    def interpreter(self, bus_greyscale, bus_line_pos, delay = .01):
+        """ Grabs data from greyscale bus, processes and outputs to the bus_line_pos """
+        while True:
+            greyscale_data = bus_greyscale.read()
+            position = self.return_pos(greyscale_data)
+            bus_line_pos.write(position)
+            sleep(delay)
             
 class Controller():
     def __init__(self, picar: Picarx, scaling_factor = 15.0):
@@ -146,10 +166,14 @@ class Controller():
         scaled_val = self.scale_factor * line_pos
         self.picar.set_dir_servo_angle(scaled_val)
         return(scaled_val)
-        
     
-        
-if __name__ == "__main__":
+    def controller_consumer(self, bus_line_pos, delay = .01):
+        while True:
+            line_pos = bus_line_pos.read()
+            self.update_angle(line_pos)
+            sleep(.01)
+
+def old_control():
     # Set up picar class
     picar = Picarx()
     # Set up greyscale class for reading 
@@ -175,3 +199,26 @@ if __name__ == "__main__":
         control.update_angle((inter_val*1.5+prev_angle*.5)/2)
         prev_angle = inter_val
         sleep(.05)
+    
+        
+    
+        
+if __name__ == "__main__":
+    picar = Picarx()
+    greyscale = Grayscale_Sensor()
+    interp = Interpreter()
+    control = Controller()
+    
+    # Create the buses
+    greyscale_bus = Bus()
+    line_pos_bus = Bus()
+    
+    sensor_delay = .01
+    interpreter_delay = .05
+    controller_delay = .1
+    
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        eSensor = executor.submit(greyscale.producer, greyscale_bus, sensor_delay)
+        eInterpreter = executor.submit(interp.interpreter,greyscale_bus, line_pos_bus, interpreter_delay)
+        eController = executor.submit(control.controller_consumer, line_pos_bus, controller_delay)
