@@ -151,11 +151,14 @@ class Interpreter():
         
     def interpreter(self, bus_greyscale, bus_line_pos, delay = .01):
         """ Grabs data from greyscale bus, processes and outputs to the bus_line_pos """
-        while True:
-            greyscale_data = bus_greyscale.read()
-            position = self.return_pos(greyscale_data)
-            bus_line_pos.write(position)
-            sleep(delay)
+        try:
+            while True:
+                greyscale_data = bus_greyscale.read()
+                position = self.return_pos(greyscale_data)
+                bus_line_pos.write(position)
+                sleep(delay)
+        except: 
+            return
             
 class Controller():
     def __init__(self, picar: Picarx, scaling_factor = 15.0):
@@ -168,10 +171,15 @@ class Controller():
         return(scaled_val)
     
     def controller_consumer(self, bus_line_pos, delay = .01):
-        while True:
-            line_pos = bus_line_pos.read()
-            self.update_angle(line_pos)
-            sleep(.01)
+        try:
+            while True:
+                
+                line_pos = bus_line_pos.read()
+                self.update_angle(line_pos)
+                logging.debug(f"New pos: {line_pos}")
+                sleep(.01)
+        except:
+            return
 
 def old_control():
     # Set up picar class
@@ -184,41 +192,47 @@ def old_control():
     reading = np.zeros((5,3))
     picar.forward(24)
     prev_angle = 0
-    while True:
-        # Get three readings
-        for i in range(5):
-            sensor_read = grey_sensor.read()
-            reading[i, :] = sensor_read
+    try:
+        while True:
+            # Get three readings
+            for i in range(5):
+                sensor_read = grey_sensor.read()
+                reading[i, :] = sensor_read
+                
+            avg_reading = list(np.mean(reading, axis=0))
             
-        avg_reading = list(np.mean(reading, axis=0))
-        
-        logging.debug(f"Avg reading: {avg_reading}")
-        inter_val = inter.return_pos(avg_reading)
-        logging.debug(f"Line position: {inter_val}")
-        
-        control.update_angle((inter_val*1.5+prev_angle*.5)/2)
-        prev_angle = inter_val
-        sleep(.05)
+            logging.debug(f"Avg reading: {avg_reading}")
+            inter_val = inter.return_pos(avg_reading)
+            logging.debug(f"Line position: {inter_val}")
+            
+            control.update_angle((inter_val*1.5+prev_angle*.5)/2)
+            prev_angle = inter_val
+            sleep(.05)
+    except:
+        return
     
         
     
         
 if __name__ == "__main__":
     picar = Picarx()
-    greyscale = Grayscale_Sensor()
-    interp = Interpreter()
-    control = Controller()
+    greyscale = Grayscale_Sensor(ADC(Grayscale_Sensor.LEFT), ADC(Grayscale_Sensor.MIDDLE), ADC(Grayscale_Sensor.RIGHT))
+    interp = Interpreter(40, 32, False)
+    control = Controller(picar, 40)
     
     # Create the buses
     greyscale_bus = Bus()
     line_pos_bus = Bus()
     
-    sensor_delay = .01
+    sensor_delay = .05
     interpreter_delay = .05
     controller_delay = .1
-    
+    picar.forward(30)
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
         eSensor = executor.submit(greyscale.producer, greyscale_bus, sensor_delay)
+        sleep(.1)
         eInterpreter = executor.submit(interp.interpreter,greyscale_bus, line_pos_bus, interpreter_delay)
+        sleep(.1)
         eController = executor.submit(control.controller_consumer, line_pos_bus, controller_delay)
+    picar.stop()
