@@ -214,7 +214,11 @@ def old_control():
         return
     
         
-    
+def ultrasonic_stopper(self, distance):
+    if distance < .1:
+        return 1
+    else:
+        return 0
         
 if __name__ == "__main__":
     picar = Picarx()
@@ -222,11 +226,17 @@ if __name__ == "__main__":
     interp = Interpreter(40, 32, False)
     control = Controller(picar, 40)
     
-    
+    ultrasonic_bus = Bus(picar.get_distance(), "ultrasonic_sensor")    
     grey_bus = Bus(greyscale.read(), "grey_sensor")
     controller_bus = Bus(0, "line_pos_bus")
     terminate_bus = Bus(0, "term_bus")
-
+    
+    # Ultrasonic producer
+    ultrasonic_prod = Producer(picar.get_distance, ultrasonic_bus, 0.05, terminate_bus, "ultrasonic")
+    
+    # Ultrasonic consumer producer
+    ultra_cons_prod = ConsumerProducer(ultrasonic_stopper, ultrasonic_bus, terminate_bus, .05, terminate_bus, "ultra_stopper")
+    
     # Greyscale sensor producer
     photo_prod = Producer(greyscale.read, grey_bus, 0.05, terminate_bus, "greyscale")
     
@@ -239,7 +249,7 @@ if __name__ == "__main__":
     # Timer to terminate
     termination_timer = Timer(terminate_bus, 5, .05, "term_timer")
 
-    node_list = [photo_prod, interpreter_a, controller_a, termination_timer]
+    node_list = [ultrasonic_prod, ultra_cons_prod, photo_prod, interpreter_a, controller_a, termination_timer]
     # Start everything
     picar.forward(30)
     runConcurrently(node_list) 
