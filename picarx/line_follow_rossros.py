@@ -158,6 +158,7 @@ class Interpreter():
                 bus_line_pos.set_message(position)
                 sleep(delay)
         except: 
+            logging.error(f"Interpreter failed.")
             return
             
 class Controller():
@@ -179,6 +180,7 @@ class Controller():
                 logging.debug(f"New pos: {line_pos}")
                 sleep(.01)
         except:
+            logging.error(f"Controller failed")
             return
 
 def old_control():
@@ -223,24 +225,24 @@ if __name__ == "__main__":
     
     grey_bus = Bus(greyscale.read(), "grey_sensor")
     controller_bus = Bus(0, "line_pos_bus")
-    
-    
     terminate_bus = Bus(0, "term_bus")
 
     # Greyscale sensor producer
-    photo_prod = Producer(greyscale.read(), grey_bus, 0.05, terminate_bus, "greyscale")
+    photo_prod = Producer(greyscale.read, grey_bus, 0.05, terminate_bus, "greyscale")
     
     # Interpret
-    interpreter = ConsumerProducer(interp.return_pos(), grey_bus, controller_bus, .05, terminate_bus, "interpreter")
+    interpreter_a = ConsumerProducer(interp.return_pos, grey_bus, controller_bus, .05, terminate_bus, "interpreter")
     
     # Controller
-    controller = Consumer(control.update_angle(), controller_bus, .05, terminate_bus, "controler")
+    controller_a = Consumer(control.update_angle, controller_bus, .05, terminate_bus, "controler")
     
     # Timer to terminate
     termination_timer = Timer(terminate_bus, 5, .05, "term_timer")
 
+    node_list = [photo_prod, interpreter_a, controller_a, termination_timer]
     # Start everything
-    runConcurrently([photo_prod, interpreter, controller, termination_timer])
+    picar.forward(30)
+    runConcurrently(node_list) 
 
 
     # Create the buses
@@ -250,7 +252,7 @@ if __name__ == "__main__":
     # sensor_delay = .05
     # interpreter_delay = .05
     # controller_delay = .1
-    # picar.forward(30)
+    # 
     
     # with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
     #     eSensor = executor.submit(greyscale.producer, greyscale_bus, sensor_delay)
