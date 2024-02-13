@@ -96,6 +96,7 @@ class Interpreter():
         
         
     def return_pos(self, greyscale_value = [0, 0, 0]):
+        print("here: ", greyscale_value)
         
         # First check if we have a least one value below the thresehold and one value above, or we failed
         min_val = min(greyscale_value)
@@ -167,8 +168,10 @@ class Controller():
         self.picar = picar
         
     def update_angle(self, line_pos = 0.0):
+        print("line_pos: ", line_pos)
         scaled_val = self.scale_factor * line_pos
         self.picar.set_dir_servo_angle(scaled_val)
+        print("New angle: ", scaled_val)
         return(scaled_val)
     
     def controller_consumer(self, bus_line_pos, delay = .01):
@@ -213,6 +216,19 @@ def old_control():
     except:
         return
     
+class Ultrasonic():
+    def __init__(self, picar):
+        self.picar = picar
+        
+    def read(self):
+        return self.picar.get_distance()
+    
+    def check_read(self, reading):
+        print("ult: ",reading)
+        if reading < 18:
+            return 1
+        else:
+            return 0
         
     
         
@@ -221,25 +237,33 @@ if __name__ == "__main__":
     greyscale = Grayscale_Sensor(ADC(Grayscale_Sensor.LEFT), ADC(Grayscale_Sensor.MIDDLE), ADC(Grayscale_Sensor.RIGHT))
     interp = Interpreter(40, 32, False)
     control = Controller(picar, 40)
+    ultrasonic = Ultrasonic(picar)
     
     
     grey_bus = Bus(greyscale.read(), "grey_sensor")
     controller_bus = Bus(0, "line_pos_bus")
     terminate_bus = Bus(0, "term_bus")
+    ultrasonic_bus = Bus(1000, "ult_bus")
 
     # Greyscale sensor producer
     photo_prod = Producer(greyscale.read, grey_bus, 0.05, terminate_bus, "greyscale")
     
+    # Ultrasonic producer
+    ult_prod = Producer(ultrasonic.read, ultrasonic_bus, 0.05, terminate_bus, "ultrasonic")
+    
     # Interpret
     interpreter_a = ConsumerProducer(interp.return_pos, grey_bus, controller_bus, .05, terminate_bus, "interpreter")
+    
+    # Ultrasonic terminator
+    ult_term = ConsumerProducer(ultrasonic.check_read, ultrasonic_bus, terminate_bus, .05, terminate_bus, "interpreter")
     
     # Controller
     controller_a = Consumer(control.update_angle, controller_bus, .05, terminate_bus, "controler")
     
-    # Timer to terminate
-    termination_timer = Timer(terminate_bus, 5, .05, "term_timer")
+    # # Timer to terminate
+    # termination_timer = Timer(terminate_bus, 5, .05, "term_timer")
 
-    node_list = [photo_prod, interpreter_a, controller_a, termination_timer]
+    node_list = [photo_prod, ult_prod, interpreter_a, controller_a, ult_term]
     # Start everything
     picar.forward(30)
     runConcurrently(node_list) 
